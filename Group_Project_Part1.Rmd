@@ -1,6 +1,8 @@
 ---
 title: "DAG and SCM Assignment, Part 1"
+group: Number 8 (Michael Quinlan, Tara Fokker, Paul Noordam, Dascha Verhagen)
 output:
+  pdf_document: default
   html_document:
     df_print: paged
 ---
@@ -12,74 +14,65 @@ library(dagitty)
 ```
 
 ```{r}
+# The causal system we have designed our DAG and SCM to represent includes factors leading to an individual having a healthy lifestyle or not. We define a healthy lifestyle in terms of making smart choices with respect to food habits and physical activity. The factors that impact these choice include, but are not limited to, education level, earnings level, gender and access to sports facilities. We attempt to model the causal relationships among these variables and how they interact to determine which factors most strongly impact an individual's decision-making process regarding a healthy lifestyle.
+```
+
+```{r}
+# Question 1: Draw a DAG representing a simple and somewhat plausible causal system from your domain of expertise. It should contain somewhere between 5 and 9 variables.
+
+# predictors: sporting, financing, education, gender
+# outcome: healthy lifestyle
 varnames <- c("Sporting", "Healthly Lifestyle", "Financing", "Education", "Gender")
 
-# arrows in DAG inform matrix structure
-# (0:no line from it / 1: line from it)
 # col_1: sporting
-# col_2: healthy
+# col_2: healthy lifestyle
 # col_3: financing
 # col_4: education
 # col_5: gender
-Adj <- matrix(c(0, 1, 0, 0, 0, # sporting 
-                0, 0, 0, 0, 0, # healthy lifestyle
-                1, 1, 0, 0, 0, # financing
-                0, 1, 1, 0, 0, # education
-                0, 0, 1, 1, 0  # gender
+
+# create a numeric matrix holding the relationship between factors
+# arrows in DAG inform matrix structure (0:no line from it / 1: line from it)
+Adj <- matrix(c(0, 1, 0, 0, 0, # row_1: sporting 
+                0, 0, 0, 0, 0, # row_2: healthy lifestyle
+                1, 1, 0, 0, 0, # row_3: financing
+                0, 1, 1, 0, 0, # row_4: education
+                0, 0, 1, 1, 0  # row_5: gender
                 ), 
                 5,5, byrow =TRUE,
                 dimnames = list(varnames, varnames))
 ```
 
-
 ```{r}
-# finances (after education) /  socioeconomic (status)...not include age and race (divide proximity into classes)
-
+# create plot of dag 
 # coordinates in rbind() indicate location of each node
-dag <- qgraph(Adj, layout = rbind(c(0, -1), # sporting
-                                  c(1, 0), # healthy
-                                  c(-1, 0), # financing
-                                  c(-2,1), # education
-                                  c(-1,-1) # gender
+dag <- qgraph(Adj, layout = rbind(c(0, -1),   # sporting
+                                  c(1,  0),   # healthy
+                                  c(-1, 0),   # earnings (after education)
+                                  c(-2, 1),   # education
+                                  c(-1,-1)    # gender
                                 ))
 plot(dag)
 
+# Question 2: Construct an SCM for this causal system. Pick any type of relationships and variable types you like. 
 
-# linear relationships and normal distribution
+# Question 3: Generate and save data from the observation distribution using sample size of 500.
+set.seed(25) # for replication of distributions
+n <- 500 # sample size
 
-set.seed(25)
-n <- 500
-
-# g_vec is 0 or 1, n: sample size, 0.5 probability of M or F)
-g_vec = c(0, 1) # 0: male; 1: female
-
-G <- rbinom(n, 1, 0.5)                    # gender (binomial distribution) 2nd argument: selects number within range (inclusive)
+G <- rbinom(n, 1, 0.5)                    # gender (binomial distribution) 2nd argument: selects number within range (inclusive). Note: 0 = male; 1 = female
 E <- rnorm(n, 0, 2) + 0.2*G               # education
 F <- rnorm(n, 0, 2) + 3*E - 1*G           # financing
 S <- rnorm(n, 0, 2) + 1.5*F               # sporting
 H <- rnorm(n, 0, 2) + 1*S + 2*F + 3*E     # healthy
-
-
 ```
 ```{r}
-# Conditioning is selecting based on a criteria and intervening is forcing the entire population. We chose to intervene on gender because we know that gender impacts both education level and financial earnings. Both of these factors impact an individual's decision-making process. For example, women typically earn less than men, but more women are studying at institutions of higher learning.
-
+# Question 4: Generate and save data after a very simple intervention on this system, again using sample size of 500. 
 G_int <- 1 # female (forcing gender = intervention)
 E_int <- rnorm(n, 0, 2) + 0.2*G               # education
 F_int <- rnorm(n, 0, 2) + 3*E - 1*G           # financing
 S_int <- rnorm(n, 0, 2) + 1.5*F               # sporting
 H_int <- rnorm(n, 0, 2) + 1*S + 2*F + 3*E     # healthy
 
+# Briefly describe why this intervention would be of interest.
+# We chose to intervene on gender because we know that gender impacts both education level and financial earnings. Both of these factors impact an individual's decision-making process. For example, women typically earn less than men, but more women are studying at institutions of higher learning.
 ```
-
-
-
-```{r}
-# Y = alpha (noise) + theta*X + betaZ + betanZn
-# X: treatment (0 or 1)
-# Z: predictors ()
-coefs<- lm(Y ~ A + R + E + F + P + H, drop.unused.levels = TRUE)$coefficients
-```
-``` 
-
-
