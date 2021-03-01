@@ -1,0 +1,85 @@
+---
+title: "DAG and SCM Assignment, Part 1"
+output:
+  html_document:
+    df_print: paged
+---
+```{r}
+library(qgraph)
+library(CondIndTests)
+library(dHSIC)
+library(dagitty)
+```
+
+```{r}
+varnames <- c("Sporting", "Healthly Lifestyle", "Financing", "Education", "Gender")
+
+# arrows in DAG inform matrix structure
+# (0:no line from it / 1: line from it)
+# col_1: sporting
+# col_2: healthy
+# col_3: financing
+# col_4: education
+# col_5: gender
+Adj <- matrix(c(0, 1, 0, 0, 0, # sporting 
+                0, 0, 0, 0, 0, # healthy lifestyle
+                1, 1, 0, 0, 0, # financing
+                0, 1, 1, 0, 0, # education
+                0, 0, 1, 1, 0  # gender
+                ), 
+                5,5, byrow =TRUE,
+                dimnames = list(varnames, varnames))
+```
+
+
+```{r}
+# finances (after education) /  socioeconomic (status)...not include age and race (divide proximity into classes)
+
+# coordinates in rbind() indicate location of each node
+dag <- qgraph(Adj, layout = rbind(c(0, -1), # sporting
+                                  c(1, 0), # healthy
+                                  c(-1, 0), # financing
+                                  c(-2,1), # education
+                                  c(-1,-1) # gender
+                                ))
+plot(dag)
+
+
+# linear relationships and normal distribution
+
+set.seed(25)
+n <- 500
+
+# g_vec is 0 or 1, n: sample size, 0.5 probability of M or F)
+g_vec = c(0, 1) # 0: male; 1: female
+
+G <- rbinom(n, 1, 0.5)                    # gender (binomial distribution) 2nd argument: selects number within range (inclusive)
+E <- rnorm(n, 0, 2) + 0.2*G               # education
+F <- rnorm(n, 0, 2) + 3*E - 1*G           # financing
+S <- rnorm(n, 0, 2) + 1.5*F               # sporting
+H <- rnorm(n, 0, 2) + 1*S + 2*F + 3*E     # healthy
+
+
+```
+```{r}
+# Conditioning is selecting based on a criteria and intervening is forcing the entire population. We chose to intervene on gender because we know that gender impacts both education level and financial earnings. Both of these factors impact an individual's decision-making process. For example, women typically earn less than men, but more women are studying at institutions of higher learning.
+
+G_int <- 1 # female (forcing gender = intervention)
+E_int <- rnorm(n, 0, 2) + 0.2*G               # education
+F_int <- rnorm(n, 0, 2) + 3*E - 1*G           # financing
+S_int <- rnorm(n, 0, 2) + 1.5*F               # sporting
+H_int <- rnorm(n, 0, 2) + 1*S + 2*F + 3*E     # healthy
+
+```
+
+
+
+```{r}
+# Y = alpha (noise) + theta*X + betaZ + betanZn
+# X: treatment (0 or 1)
+# Z: predictors ()
+coefs<- lm(Y ~ A + R + E + F + P + H, drop.unused.levels = TRUE)$coefficients
+```
+``` 
+
+
